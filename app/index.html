@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>The Tiny Node Graph Editor</title>
+</head>
+
+<body>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    #canvas {
+      appearance: none;
+      box-sizing: border-box;
+      position: absolute;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      -webkit-perspective: 1000;
+      perspective: 1000;
+      transform-origin: 0 0;
+      will-change: transform contents;
+      width: auto;
+      height: auto;
+    }
+
+    .node {
+      position: absolute;
+      appearance: none;
+      box-sizing: border-box;
+    }
+  </style>
+
+  <div id="canvas"></div>
+
+  <script type="module">
+    const canvas = document.getElementById('canvas');
+
+    const h = (x, y, style = {}, ...children) => {
+      const el = document.createElement('node');
+      el.className = "node";
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      for (const key in style) {
+        el.style[key] = style[key];
+      }
+      el.append(...children);
+      return el;
+    };
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    const hook = (event, callback, options) => {
+      const handler = (e) => callback(e);
+      window.addEventListener(event, handler, options);
+      return () => window.removeEventListener(event, handler);
+    };
+
+    let transform = { x: 0, y: 0, zoom: 1 };
+
+    hook("wheel", (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const { x: left, y: top } = transform;
+        const zoom = clamp(transform.zoom * Math.pow(2, -Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY) * 0.025, 0.5)), 0.05, 3);
+        const x = ((e.clientX - left + window.scrollX) / transform.zoom) * (zoom - transform.zoom);
+        const y = ((e.clientY - top + window.scrollY) / transform.zoom) * (zoom - transform.zoom);
+        transform = {
+          x: transform.x - x,
+          y: transform.y - y,
+          zoom,
+        };
+      }
+      else {
+        transform.x -= e.deltaX;
+        transform.y -= e.deltaY;
+      }
+      requestAnimationFrame(render);
+    },
+      { passive: false },
+    );
+
+    function render() {
+      canvas.style.transform = `matrix3d(${transform.zoom}, 0, 0, 0, 0, ${transform.zoom}, 0, 0, 0, 0, 1, 0, ${transform.x}, ${transform.y}, 0, 1)`;
+    }
+    requestAnimationFrame(render);
+
+    const elements = new Set();
+    function createElement(x, y, attrs) {
+      const element = {
+        x,
+        y,
+        attrs,
+        node: h(x, y, attrs),
+      };
+      elements.add(element);
+      canvas.appendChild(element.node);
+    }
+
+    createElement(100, 100, { width: "100px", height: "100px", backgroundColor: "red" });
+  </script>
+</body>
+
+</html>

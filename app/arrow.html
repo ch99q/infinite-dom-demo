@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Elements with arrows</title>
+</head>
+
+<body>
+  <svg id="svgElement" width="1000" height="1000">
+    <foreignObject id="source" x="100" y="300" width="100px" height="100px">
+      <div
+        style="box-sizing:border-box; position: absolute; width: 100px; height: 100px; background-color: ghostwhite; border: 1px solid #eee; border-radius: 3px;">
+      </div>
+    </foreignObject>
+    <foreignObject id="target" x="400" y="600" width="100px" height="100px">
+      <div
+        style="box-sizing:border-box; position: absolute; width: 100px; height: 100px; background-color: ghostwhite; border: 1px solid #eee; border-radius: 3px;">
+      </div>
+    </foreignObject>
+  </svg>
+
+  <script type="module">
+    const attr = (el, name) => parseFloat(el.getAttribute(name));
+
+    function createPath(source, target, roundness = 10) {
+      // Calculate the starting points
+      const startX = attr(source, "x") + attr(source, "width");
+      const startY = attr(source, "y") + attr(source, "height") / 2;
+      const endX = attr(target, "x");
+      const endY = attr(target, "y") + attr(target, "height") / 2;
+
+      // Calculate the distance between the elements
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      // Control points for the rounded corners
+      const controlPointX = startX + deltaX * 0.5;
+      const controlPointY1 = startY + Math.sign(deltaY) * roundness;
+      const controlPointY2 = endY - Math.sign(deltaY) * roundness;
+
+      let path = `M ${startX} ${startY} `; // Move to the start position
+      path += `L ${controlPointX - roundness} ${startY} `; // Horizontal line to start of curve
+      path += `Q ${controlPointX} ${startY} ${controlPointX} ${controlPointY1} `; // Curve down or up
+      path += `L ${controlPointX} ${controlPointY2} `; // Vertical line
+      path += `Q ${controlPointX} ${endY} ${controlPointX + roundness} ${endY} `; // Curve to horizontal
+      path += `L ${endX} ${endY}`; // Horizontal line to end position
+
+      return path;
+    }
+
+    // Assume you have two DOM elements with IDs 'source' and 'target'
+    const sourceElement = document.getElementById('source');
+    const targetElement = document.getElementById('target');
+
+    // Generate the smooth step path
+    const pathString = createPath(sourceElement, targetElement);
+
+    // Use this path string in an SVG path element's 'd' attribute to draw the arrow
+    const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathElement.setAttribute("d", pathString);
+    pathElement.setAttribute("fill", "none");
+    pathElement.setAttribute("stroke", "black");
+
+    // Append this path to an SVG element (assuming there's an SVG element with id 'svgElement' in the DOM)
+    document.getElementById('svgElement').appendChild(pathElement);
+  </script>
+</body>
+
+</html>
